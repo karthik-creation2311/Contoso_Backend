@@ -1,0 +1,14 @@
+{
+  "name": "nile-backend",
+  "version": "1.0.0",
+  "description": "nile backend with postgresql DB and 3 layer arcitecture structure",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "karthik",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
