@@ -2,13 +2,28 @@
   "name": "nile-backend",
   "version": "1.0.0",
   "description": "nile backend with postgresql DB and 3 layer arcitecture structure",
-  "main": "app.js",
+  "main": "src/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon src/server.js",
+    "start": "NODE_ENV=production node src/server.js",
+    "test:api": "NODE_ENV=test node src/server.js"
   },
   "author": "karthik",
   "license": "ISC",
   "dependencies": {
-    "express": "^5.1.0"
+    "@prisma/client": "^6.15.0",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^17.2.1",
+    "dotenv-flow": "^4.1.0",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "pino": "^9.9.0",
+    "pino-http": "^10.5.0",
+    "prisma": "^6.15.0",
+    "zod": "^4.1.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
   }
 }

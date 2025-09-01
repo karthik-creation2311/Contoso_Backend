@@ -1,24 +1,19 @@
-const express = require('express');
+const express = require("express");
+const helmet = require("helmet");
+const pinoHttp = require("pino-http");
+const routes = require("./routes");
+const { errorMiddleware } = require("./middlewares/error");
 
-const app = express();
+function buildApp(logger) {
+  const app = express();
+  app.use(express.json());
+  app.use(helmet());
+  app.use(pinoHttp({ logger }));
 
-// Middleware to parse JSON bodies
-app.use(express.json());
+  app.get("/healthz", (req, res) => res.send("ok"));
+  app.use("/api", routes);
 
-// Basic health check endpoint
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', message: 'Nile Portal Backend is running.' });
-});
-
-// Example placeholder route
-app.get('/api', (req, res) => {
-    res.json({ message: 'Welcome to the Nile Portal Backend API.' });
-});
-
-// Start the server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Nile Portal Backend API listening on port ${PORT}`);
-});
-
-module.exports = app;
+  app.use(errorMiddleware); // last
+  return app;
+}
+module.exports = { buildApp };

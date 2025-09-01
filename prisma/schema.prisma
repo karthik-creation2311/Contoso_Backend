@@ -1,0 +1,865 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["aud", "mst", "public", "ums"]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model departments {
+  dept_id          String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id           String             @db.Uuid
+  code             String
+  is_active        Boolean            @default(true)
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  organizations    organizations      @relation(fields: [org_id], references: [org_id], onDelete: Cascade, onUpdate: NoAction)
+  departments_i18n departments_i18n[]
+  users            users[]
+
+  @@unique([org_id, code])
+  @@schema("mst")
+}
+
+model departments_i18n {
+  dept_id     String                   @db.Uuid
+  locale      String
+  name        String
+  description String?
+  search      Unsupported("tsvector")?
+  departments departments              @relation(fields: [dept_id], references: [dept_id], onDelete: Cascade, onUpdate: NoAction)
+  locales     locales                  @relation(fields: [locale], references: [locale_code], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([dept_id, locale])
+  @@index([search], map: "departments_i18n_gin", type: Gin)
+  @@schema("mst")
+}
+
+model locales {
+  locale_code                  String                         @id
+  english_name                 String
+  native_name                  String
+  direction                    dir_type                       @default(ltr)
+  cost_centers_i18n            cost_centers_i18n[]
+  currencies_i18n              currencies_i18n[]
+  departments_i18n             departments_i18n[]
+  designations_i18n            designations_i18n[]
+  discount_reasons_i18n        discount_reasons_i18n[]
+  employee_document_types_i18n employee_document_types_i18n[]
+  fnb_menu_categories_i18n     fnb_menu_categories_i18n[]
+  kds_stations_i18n            kds_stations_i18n[]
+  levels_i18n                  levels_i18n[]
+  lifecycle_reasons_i18n       lifecycle_reasons_i18n[]
+  organizations                organizations[]
+  payment_methods_i18n         payment_methods_i18n[]
+  permissions_i18n             permissions_i18n[]
+  properties_i18n              properties_i18n[]
+  revenue_centers_i18n         revenue_centers_i18n[]
+  supplier_categories_i18n     supplier_categories_i18n[]
+  tax_codes_i18n               tax_codes_i18n[]
+  uom_i18n                     uom_i18n[]
+  wastage_reasons_i18n         wastage_reasons_i18n[]
+  approval_levels_i18n         approval_levels_i18n[]
+  approval_workflows_i18n      approval_workflows_i18n[]
+  roles_i18n                   roles_i18n[]
+  users                        users[]
+
+  @@schema("mst")
+}
+
+model organizations {
+  org_id                  String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                    String
+  code                    String                    @unique
+  default_locale          String
+  timezone                String                    @default("Asia/Kolkata")
+  is_active               Boolean                   @default(true)
+  created_at              DateTime                  @default(now()) @db.Timestamptz(6)
+  cost_centers            cost_centers[]
+  currencies              currencies[]
+  departments             departments[]
+  designations            designations[]
+  discount_reasons        discount_reasons[]
+  employee_document_types employee_document_types[]
+  fnb_menu_categories     fnb_menu_categories[]
+  kds_stations            kds_stations[]
+  levels                  levels[]
+  lifecycle_reasons       lifecycle_reasons[]
+  locales                 locales                   @relation(fields: [default_locale], references: [locale_code], onDelete: NoAction, onUpdate: NoAction)
+  payment_methods         payment_methods[]
+  properties              properties[]
+  revenue_centers         revenue_centers[]
+  supplier_categories     supplier_categories[]
+  tax_codes               tax_codes[]
+  uom                     uom[]
+  wastage_reasons         wastage_reasons[]
+  approval_requests       approval_requests[]
+  approval_workflows      approval_workflows[]
+  invites                 invites[]
+  roles                   roles[]
+  users                   users[]
+
+  @@schema("mst")
+}
+
+model permissions {
+  perm_key         String             @id
+  is_assignable    Boolean            @default(true)
+  permissions_i18n permissions_i18n[]
+  role_permissions role_permissions[]
+
+  @@schema("mst")
+}
+
+model permissions_i18n {
+  perm_key     String
+  locale       String
+  display_name String
+  description  String?
+  locales      locales     @relation(fields: [locale], references: [locale_code], onDelete: NoAction, onUpdate: NoAction)
+  permissions  permissions @relation(fields: [perm_key], references: [perm_key], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([perm_key, locale])
+  @@schema("mst")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model properties {
+  property_id          String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id               String                 @db.Uuid
+  code                 String
+  city                 String?
+  state                String?
+  country              String?
+  is_active            Boolean                @default(true)
+  created_at           DateTime               @default(now()) @db.Timestamptz(6)
+  organizations        organizations          @relation(fields: [org_id], references: [org_id], onDelete: Cascade, onUpdate: NoAction)
+  properties_i18n      properties_i18n[]
+  user_property_scopes user_property_scopes[]
+  user_roles           user_roles[]
+  users                users[]
+
+  @@unique([org_id, code])
+  @@schema("mst")
+}
+
+model properties_i18n {
+  property_id String                   @db.Uuid
+  locale      String
+  name        String
+  description String?
+  search      Unsupported("tsvector")?
+  locales     locales                  @relation(fields: [locale], references: [locale_code], onDelete: NoAction, onUpdate: NoAction)
+  properties  properties               @relation(fields: [property_id], references: [property_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([property_id, locale])
+  @@index([search], map: "properties_i18n_gin", type: Gin)
+  @@schema("mst")
+}
+
+model approval_levels {
+  wf_id              String             @db.Uuid
+  level_no           Int
+  approver_rule      Json?
+  role_id            String?            @db.Uuid
+  roles              roles?             @relation(fields: [role_id], references: [role_id], onDelete: NoAction, onUpdate: NoAction)
+  approval_workflows approval_workflows @relation(fields: [wf_id], references: [wf_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([wf_id, level_no])
+  @@schema("ums")
+}
+
+model approval_levels_i18n {
+  wf_id              String             @db.Uuid
+  level_no           Int
+  locale             String
+  title              String
+  approver_hint      String?
+  locales            locales            @relation(fields: [locale], references: [locale_code], onDelete: NoAction, onUpdate: NoAction)
+  approval_workflows approval_workflows @relation(fields: [wf_id], references: [wf_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([wf_id, level_no, locale])
+  @@schema("ums")
+}
+
+model approval_requests {
+  req_id                                      String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  wf_id                                       String             @db.Uuid
+  org_id                                      String             @db.Uuid
+  subject_user                                String?            @db.Uuid
+  payload                                     Json
+  state                                       approval_state     @default(pending)
+  created_by                                  String?            @db.Uuid
+  created_at                                  DateTime           @default(now()) @db.Timestamptz(6)
+  closed_at                                   DateTime?          @db.Timestamptz(6)
+  users_approval_requests_created_byTousers   users?             @relation("approval_requests_created_byTousers", fields: [created_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  organizations                               organizations      @relation(fields: [org_id], references: [org_id], onDelete: Cascade, onUpdate: NoAction)
+  users_approval_requests_subject_userTousers users?             @relation("approval_requests_subject_userTousers", fields: [subject_user], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  approval_workflows                          approval_workflows @relation(fields: [wf_id], references: [wf_id], onUpdate: NoAction)
+  approval_steps                              approval_steps[]
+
+  @@schema("ums")
+}
+
+model approval_steps {
+  req_id                                  String            @db.Uuid
+  level_no                                Int
+  assigned_to                             String?           @db.Uuid
+  state                                   approval_state    @default(pending)
+  acted_by                                String?           @db.Uuid
+  acted_at                                DateTime?         @db.Timestamptz(6)
+  remarks                                 String?
+  users_approval_steps_acted_byTousers    users?            @relation("approval_steps_acted_byTousers", fields: [acted_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  users_approval_steps_assigned_toTousers users?            @relation("approval_steps_assigned_toTousers", fields: [assigned_to], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  approval_requests                       approval_requests @relation(fields: [req_id], references: [req_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([req_id, level_no])
+  @@schema("ums")
+}
+
+model approval_workflows {
+  wf_id                   String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id                  String                    @db.Uuid
+  code                    String
+  is_active               Boolean                   @default(true)
+  sla_days                Int                       @default(2)
+  created_at              DateTime                  @default(now()) @db.Timestamptz(6)
+  approval_levels         approval_levels[]
+  approval_levels_i18n    approval_levels_i18n[]
+  approval_requests       approval_requests[]
+  organizations           organizations             @relation(fields: [org_id], references: [org_id], onDelete: Cascade, onUpdate: NoAction)
+  approval_workflows_i18n approval_workflows_i18n[]
+
+  @@unique([org_id, code])
+  @@schema("ums")
+}
+
+model approval_workflows_i18n {
+  wf_id              String             @db.Uuid
+  locale             String
+  title              String
+  description        String?
+  locales            locales            @relation(fields: [locale], references: [locale_code], onDelete: NoAction, onUpdate: NoAction)
+  approval_workflows approval_workflows @relation(fields: [wf_id], references: [wf_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([wf_id, locale])
+  @@schema("ums")
+}
+
+model invites {
+  invite_id     String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id        String        @db.Uuid
+  email         String        @db.Citext
+  invited_by    String?       @db.Uuid
+  token_hash    String
+  expires_at    DateTime      @db.Timestamptz(6)
+  accepted_at   DateTime?     @db.Timestamptz(6)
+  created_at    DateTime      @default(now()) @db.Timestamptz(6)
+  users         users?        @relation(fields: [invited_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  organizations organizations @relation(fields: [org_id], references: [org_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([org_id, email])
+  @@schema("ums")
+}
+
+model login_events {
+  event_id    String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String       @db.Uuid
+  status      login_status
+  ip_address  String?      @db.Inet
+  user_agent  String?
+  locale_used String?
+  created_at  DateTime     @default(now()) @db.Timestamptz(6)
+  users       users        @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@schema("ums")
+}
+
+model role_permissions {
+  role_id     String      @db.Uuid
+  perm_key    String
+  permissions permissions @relation(fields: [perm_key], references: [perm_key], onDelete: Cascade, onUpdate: NoAction)
+  roles       roles       @relation(fields: [role_id], references: [role_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([role_id, perm_key])
+  @@schema("ums")
+}
+
+model roles {
+  role_id          String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id           String             @db.Uuid
+  code             String
+  scope            role_scope         @default(PROPERTY)
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  approval_levels  approval_levels[]
+  role_permissions role_permissions[]
+  organizations    organizations      @relation(fields: [org_id], references: [org_id], onDelete: Cascade, onUpdate: NoAction)
+  roles_i18n       roles_i18n[]
+  user_roles       user_roles[]
+
+  @@unique([org_id, code])
+  @@schema("ums")
+}
+
+model roles_i18n {
+  role_id      String                   @db.Uuid
+  locale       String
+  display_name String
+  description  String?
+  search       Unsupported("tsvector")?
+  locales      locales                  @relation(fields: [locale], references: [locale_code], onDelete: NoAction, onUpdate: NoAction)
+  roles        roles                    @relation(fields: [role_id], references: [role_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([role_id, locale])
+  @@index([search], map: "roles_i18n_gin", type: Gin)
+  @@schema("ums")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model user_property_scopes {
+  user_id     String     @db.Uuid
+  property_id String     @db.Uuid
+  properties  properties @relation(fields: [property_id], references: [property_id], onDelete: Cascade, onUpdate: NoAction)
+  users       users      @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, property_id])
+  @@schema("ums")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model user_roles {
+  user_id                             String     @db.Uuid
+  role_id                             String     @db.Uuid
+  property_id                         String     @db.Uuid
+  assigned_by                         String?    @db.Uuid
+  assigned_at                         DateTime   @default(now()) @db.Timestamptz(6)
+  users_user_roles_assigned_byTousers users?     @relation("user_roles_assigned_byTousers", fields: [assigned_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  properties                          properties @relation(fields: [property_id], references: [property_id], onDelete: Cascade, onUpdate: NoAction)
+  roles                               roles      @relation(fields: [role_id], references: [role_id], onDelete: Cascade, onUpdate: NoAction)
+  users_user_roles_user_idTousers     users      @relation("user_roles_user_idTousers", fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, role_id, property_id])
+  @@schema("ums")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model users {
+  user_id                                                 String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id                                                  String                 @db.Uuid
+  email                                                   String                 @db.Citext
+  username                                                String?                @db.Citext
+  given_name                                              String?
+  family_name                                             String?
+  display_name                                            String?
+  phone                                                   String?
+  status                                                  user_status            @default(pending)
+  preferred_locale                                        String?
+  dept_id                                                 String?                @db.Uuid
+  property_id                                             String?                @db.Uuid
+  manager_id                                              String?                @db.Uuid
+  is_admin                                                Boolean                @default(false)
+  mfa_enabled                                             Boolean                @default(true)
+  password_hash                                           String?
+  created_at                                              DateTime               @default(now()) @db.Timestamptz(6)
+  last_login_at                                           DateTime?              @db.Timestamptz(6)
+  approval_requests_approval_requests_created_byTousers   approval_requests[]    @relation("approval_requests_created_byTousers")
+  approval_requests_approval_requests_subject_userTousers approval_requests[]    @relation("approval_requests_subject_userTousers")
+  approval_steps_approval_steps_acted_byTousers           approval_steps[]       @relation("approval_steps_acted_byTousers")
+  approval_steps_approval_steps_assigned_toTousers        approval_steps[]       @relation("approval_steps_assigned_toTousers")
+  invites                                                 invites[]
+  login_events                                            login_events[]
+  user_property_scopes                                    user_property_scopes[]
+  user_roles_user_roles_assigned_byTousers                user_roles[]           @relation("user_roles_assigned_byTousers")
+  user_roles_user_roles_user_idTousers                    user_roles[]           @relation("user_roles_user_idTousers")
+  departments                                             departments?           @relation(fields: [dept_id], references: [dept_id], onUpdate: NoAction)
+  users                                                   users?                 @relation("usersTousers", fields: [manager_id], references: [user_id], onUpdate: NoAction)
+  other_users                                             users[]                @relation("usersTousers")
+  organizations                                           organizations          @relation(fields: [org_id], references: [org_id], onDelete: Cascade, onUpdate: NoAction)
+  locales                                                 locales?               @relation(fields: [preferred_locale], references: [locale_code], onDelete: NoAction, onUpdate: NoAction)
+  properties                                              properties?            @relation(fields: [property_id], references: [property_id], onUpdate: NoAction)
+
+  @@unique([org_id, email])
+  @@unique([org_id, username])
+  @@schema("ums")
+}
+
+model audit_log {
+  audit_id     BigInt   @id @default(autoincrement())
+  table_schema String
+  table_name   String
+  action       String
+  org_id       String?  @db.Uuid
+  row_pk       Json?
+  old_row      Json?
+  new_row      Json?
+  actor_user   String?  @db.Uuid
+  acted_at     DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([action], map: "aud_log_action_idx")
+  @@index([org_id, acted_at(sort: Desc)], map: "aud_log_org_time_idx")
+  @@index([table_schema, table_name, acted_at(sort: Desc)], map: "aud_log_tbl_time_idx")
+  @@schema("aud")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model cost_centers {
+  cost_center_id    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id            String              @db.Uuid
+  code              String
+  is_active         Boolean             @default(true)
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+  organizations     organizations       @relation(fields: [org_id], references: [org_id], onDelete: Cascade, onUpdate: NoAction)
+  cost_centers_i18n cost_centers_i18n[]
+
+  @@unique([org_id, code])
+  @@schema("mst")
+}
+
+model cost_centers_i18n {
+  cost_center_id String                   @db.Uuid
+  locale         String
+  name           String
+  description    String?
+  search         Unsupported("tsvector")?
+  cost_centers   cost_centers             @relation(fields: [cost_center_id], references: [cost_center_id], onDelete: Cascade, onUpdate: NoAction)
+  locales        locales                  @relation(fields: [locale], references: [locale_code], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([cost_center_id, locale])
+  @@index([search], map: "cost_centers_i18n_gin", type: Gin)
+  @@schema("mst")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model currencies {
+  currency_id     String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id          String            @db.Uuid
+  code            String
+  is_active       Boolean           @default(true)
+  created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  organizations   organizations     @relation(fields: [org_id], references: [org_id], onDelete: Cascade, onUpdate: NoAction)
+  currencies_i18n currencies_i18n[]
+
+  @@unique([org_id, code])
+  @@schema("mst")
+}
+
+model currencies_i18n {
+  currency_id String                   @db.Uuid
+  locale      String
+  name        String
+  description String?
+  search      Unsupported("tsvector")?
+  currencies  currencies               @relation(fields: [currency_id], references: [currency_id], onDelete: Cascade, onUpdate: NoAction)
+  locales     locales                  @relation(fields: [locale], references: [locale_code], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([currency_id, locale])
+  @@index([search], map: "currencies_i18n_gin", type: Gin)
+  @@schema("mst")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model designations {
+  designation_id    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id            String              @db.Uuid
+  code              String
+  is_active         Boolean             @default(true)
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+  organizations     organizations       @relation(fields: [org_id], references: [org_id], onDelete: Cascade, onUpdate: NoAction)
+  designations_i18n designations_i18n[]
+
+  @@unique([org_id, code])
+  @@schema("mst")
+}
+
+model designations_i18n {
+  designation_id String                   @db.Uuid
+  locale         String
+  name           String
+  description    String?
+  search         Unsupported("tsvector")?
+  designations   designations             @relation(fields: [designation_id], references: [designation_id], onDelete: Cascade, onUpdate: NoAction)
+  locales        locales                  @relation(fields: [locale], references: [locale_code], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([designation_id, locale])
+  @@index([search], map: "designations_i18n_gin", type: Gin)
+  @@schema("mst")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model discount_reasons {
+  discount_reason_id    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id                String                  @db.Uuid
+  code                  String
+  is_active             Boolean                 @default(true)
+  created_at            DateTime                @default(now()) @db.Timestamptz(6)
+  organizations         organizations           @relation(fields: [org_id], references: [org_id], onDelete: Cascade, onUpdate: NoAction)
+  discount_reasons_i18n discount_reasons_i18n[]
+
+  @@unique([org_id, code])
+  @@schema("mst")
+}
+
+model discount_reasons_i18n {
+  discount_reason_id String                   @db.Uuid
+  locale             String
+  name               String
+  description        String?
+  search             Unsupported("tsvector")?
+  discount_reasons   discount_reasons         @relation(fields: [discount_reason_id], references: [discount_reason_id], onDelete: Cascade, onUpdate: NoAction)
+  locales            locales                  @relation(fields: [locale], references: [locale_code], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([discount_reason_id, locale])
+  @@index([search], map: "discount_reasons_i18n_gin", type: Gin)
+  @@schema("mst")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model employee_document_types {
+  employee_document_type_id    String                         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id                       String                         @db.Uuid
+  code                         String
+  is_active                    Boolean                        @default(true)
+  created_at                   DateTime                       @default(now()) @db.Timestamptz(6)
+  organizations                organizations                  @relation(fields: [org_id], references: [org_id], onDelete: Cascade, onUpdate: NoAction)
+  employee_document_types_i18n employee_document_types_i18n[]
+
+  @@unique([org_id, code])
+  @@schema("mst")
+}
+
+model employee_document_types_i18n {
+  employee_document_type_id String                   @db.Uuid
+  locale                    String
+  name                      String
+  description               String?
+  search                    Unsupported("tsvector")?
+  employee_document_types   employee_document_types  @relation(fields: [employee_document_type_id], references: [employee_document_type_id], onDelete: Cascade, onUpdate: NoAction)
+  locales                   locales                  @relation(fields: [locale], references: [locale_code], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([employee_document_type_id, locale])
+  @@index([search], map: "employee_document_types_i18n_gin", type: Gin)
+  @@schema("mst")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model fnb_menu_categories {
+  fnb_menu_category_id     String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id                   String                     @db.Uuid
+  code                     String
+  is_active                Boolean                    @default(true)
+  created_at               DateTime                   @default(now()) @db.Timestamptz(6)
+  organizations            organizations              @relation(fields: [org_id], references: [org_id], onDelete: Cascade, onUpdate: NoAction)
+  fnb_menu_categories_i18n fnb_menu_categories_i18n[]
+
+  @@unique([org_id, code])
+  @@schema("mst")
+}
+
+model fnb_menu_categories_i18n {
+  fnb_menu_category_id String                   @db.Uuid
+  locale               String
+  name                 String
+  description          String?
+  search               Unsupported("tsvector")?
+  fnb_menu_categories  fnb_menu_categories      @relation(fields: [fnb_menu_category_id], references: [fnb_menu_category_id], onDelete: Cascade, onUpdate: NoAction)
+  locales              locales                  @relation(fields: [locale], references: [locale_code], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([fnb_menu_category_id, locale])
+  @@index([search], map: "fnb_menu_categories_i18n_gin", type: Gin)
+  @@schema("mst")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model kds_stations {
+  kds_station_id    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id            String              @db.Uuid
+  code              String
+  is_active         Boolean             @default(true)
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+  organizations     organizations       @relation(fields: [org_id], references: [org_id], onDelete: Cascade, onUpdate: NoAction)
+  kds_stations_i18n kds_stations_i18n[]
+
+  @@unique([org_id, code])
+  @@schema("mst")
+}
+
+model kds_stations_i18n {
+  kds_station_id String                   @db.Uuid
+  locale         String
+  name           String
+  description    String?
+  search         Unsupported("tsvector")?
+  kds_stations   kds_stations             @relation(fields: [kds_station_id], references: [kds_station_id], onDelete: Cascade, onUpdate: NoAction)
+  locales        locales                  @relation(fields: [locale], references: [locale_code], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([kds_station_id, locale])
+  @@index([search], map: "kds_stations_i18n_gin", type: Gin)
+  @@schema("mst")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model levels {
+  level_id      String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id        String        @db.Uuid
+  code          String
+  is_active     Boolean       @default(true)
+  created_at    DateTime      @default(now()) @db.Timestamptz(6)
+  organizations organizations @relation(fields: [org_id], references: [org_id], onDelete: Cascade, onUpdate: NoAction)
+  levels_i18n   levels_i18n[]
+
+  @@unique([org_id, code])
+  @@schema("mst")
+}
+
+model levels_i18n {
+  level_id    String                   @db.Uuid
+  locale      String
+  name        String
+  description String?
+  search      Unsupported("tsvector")?
+  levels      levels                   @relation(fields: [level_id], references: [level_id], onDelete: Cascade, onUpdate: NoAction)
+  locales     locales                  @relation(fields: [locale], references: [locale_code], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([level_id, locale])
+  @@index([search], map: "levels_i18n_gin", type: Gin)
+  @@schema("mst")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model lifecycle_reasons {
+  lifecycle_reason_id    String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id                 String                   @db.Uuid
+  code                   String
+  is_active              Boolean                  @default(true)
+  created_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  organizations          organizations            @relation(fields: [org_id], references: [org_id], onDelete: Cascade, onUpdate: NoAction)
+  lifecycle_reasons_i18n lifecycle_reasons_i18n[]
+
+  @@unique([org_id, code])
+  @@schema("mst")
+}
+
+model lifecycle_reasons_i18n {
+  lifecycle_reason_id String                   @db.Uuid
+  locale              String
+  name                String
+  description         String?
+  search              Unsupported("tsvector")?
+  lifecycle_reasons   lifecycle_reasons        @relation(fields: [lifecycle_reason_id], references: [lifecycle_reason_id], onDelete: Cascade, onUpdate: NoAction)
+  locales             locales                  @relation(fields: [locale], references: [locale_code], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([lifecycle_reason_id, locale])
+  @@index([search], map: "lifecycle_reasons_i18n_gin", type: Gin)
+  @@schema("mst")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model payment_methods {
+  payment_method_id    String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id               String                 @db.Uuid
+  code                 String
+  is_active            Boolean                @default(true)
+  created_at           DateTime               @default(now()) @db.Timestamptz(6)
+  organizations        organizations          @relation(fields: [org_id], references: [org_id], onDelete: Cascade, onUpdate: NoAction)
+  payment_methods_i18n payment_methods_i18n[]
+
+  @@unique([org_id, code])
+  @@schema("mst")
+}
+
+model payment_methods_i18n {
+  payment_method_id String                   @db.Uuid
+  locale            String
+  name              String
+  description       String?
+  search            Unsupported("tsvector")?
+  locales           locales                  @relation(fields: [locale], references: [locale_code], onDelete: NoAction, onUpdate: NoAction)
+  payment_methods   payment_methods          @relation(fields: [payment_method_id], references: [payment_method_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([payment_method_id, locale])
+  @@index([search], map: "payment_methods_i18n_gin", type: Gin)
+  @@schema("mst")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model revenue_centers {
+  revenue_center_id    String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id               String                 @db.Uuid
+  code                 String
+  is_active            Boolean                @default(true)
+  created_at           DateTime               @default(now()) @db.Timestamptz(6)
+  organizations        organizations          @relation(fields: [org_id], references: [org_id], onDelete: Cascade, onUpdate: NoAction)
+  revenue_centers_i18n revenue_centers_i18n[]
+
+  @@unique([org_id, code])
+  @@schema("mst")
+}
+
+model revenue_centers_i18n {
+  revenue_center_id String                   @db.Uuid
+  locale            String
+  name              String
+  description       String?
+  search            Unsupported("tsvector")?
+  locales           locales                  @relation(fields: [locale], references: [locale_code], onDelete: NoAction, onUpdate: NoAction)
+  revenue_centers   revenue_centers          @relation(fields: [revenue_center_id], references: [revenue_center_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([revenue_center_id, locale])
+  @@index([search], map: "revenue_centers_i18n_gin", type: Gin)
+  @@schema("mst")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model supplier_categories {
+  supplier_category_id     String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id                   String                     @db.Uuid
+  code                     String
+  is_active                Boolean                    @default(true)
+  created_at               DateTime                   @default(now()) @db.Timestamptz(6)
+  organizations            organizations              @relation(fields: [org_id], references: [org_id], onDelete: Cascade, onUpdate: NoAction)
+  supplier_categories_i18n supplier_categories_i18n[]
+
+  @@unique([org_id, code])
+  @@schema("mst")
+}
+
+model supplier_categories_i18n {
+  supplier_category_id String                   @db.Uuid
+  locale               String
+  name                 String
+  description          String?
+  search               Unsupported("tsvector")?
+  locales              locales                  @relation(fields: [locale], references: [locale_code], onDelete: NoAction, onUpdate: NoAction)
+  supplier_categories  supplier_categories      @relation(fields: [supplier_category_id], references: [supplier_category_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([supplier_category_id, locale])
+  @@index([search], map: "supplier_categories_i18n_gin", type: Gin)
+  @@schema("mst")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model tax_codes {
+  tax_code_id    String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id         String           @db.Uuid
+  code           String
+  is_active      Boolean          @default(true)
+  created_at     DateTime         @default(now()) @db.Timestamptz(6)
+  organizations  organizations    @relation(fields: [org_id], references: [org_id], onDelete: Cascade, onUpdate: NoAction)
+  tax_codes_i18n tax_codes_i18n[]
+
+  @@unique([org_id, code])
+  @@schema("mst")
+}
+
+model tax_codes_i18n {
+  tax_code_id String                   @db.Uuid
+  locale      String
+  name        String
+  description String?
+  search      Unsupported("tsvector")?
+  locales     locales                  @relation(fields: [locale], references: [locale_code], onDelete: NoAction, onUpdate: NoAction)
+  tax_codes   tax_codes                @relation(fields: [tax_code_id], references: [tax_code_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([tax_code_id, locale])
+  @@index([search], map: "tax_codes_i18n_gin", type: Gin)
+  @@schema("mst")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model uom {
+  uom_id        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id        String        @db.Uuid
+  code          String
+  is_active     Boolean       @default(true)
+  created_at    DateTime      @default(now()) @db.Timestamptz(6)
+  organizations organizations @relation(fields: [org_id], references: [org_id], onDelete: Cascade, onUpdate: NoAction)
+  uom_i18n      uom_i18n[]
+
+  @@unique([org_id, code])
+  @@schema("mst")
+}
+
+model uom_i18n {
+  uom_id      String                   @db.Uuid
+  locale      String
+  name        String
+  description String?
+  search      Unsupported("tsvector")?
+  locales     locales                  @relation(fields: [locale], references: [locale_code], onDelete: NoAction, onUpdate: NoAction)
+  uom         uom                      @relation(fields: [uom_id], references: [uom_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([uom_id, locale])
+  @@index([search], map: "uom_i18n_gin", type: Gin)
+  @@schema("mst")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model wastage_reasons {
+  wastage_reason_id    String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id               String                 @db.Uuid
+  code                 String
+  is_active            Boolean                @default(true)
+  created_at           DateTime               @default(now()) @db.Timestamptz(6)
+  organizations        organizations          @relation(fields: [org_id], references: [org_id], onDelete: Cascade, onUpdate: NoAction)
+  wastage_reasons_i18n wastage_reasons_i18n[]
+
+  @@unique([org_id, code])
+  @@schema("mst")
+}
+
+model wastage_reasons_i18n {
+  wastage_reason_id String                   @db.Uuid
+  locale            String
+  name              String
+  description       String?
+  search            Unsupported("tsvector")?
+  locales           locales                  @relation(fields: [locale], references: [locale_code], onDelete: NoAction, onUpdate: NoAction)
+  wastage_reasons   wastage_reasons          @relation(fields: [wastage_reason_id], references: [wastage_reason_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([wastage_reason_id, locale])
+  @@index([search], map: "wastage_reasons_i18n_gin", type: Gin)
+  @@schema("mst")
+}
+
+enum approval_state {
+  pending
+  approved
+  rejected
+  skipped
+  cancelled
+
+  @@schema("public")
+}
+
+enum dir_type {
+  ltr
+  rtl
+
+  @@schema("public")
+}
+
+enum login_status {
+  success
+  failed
+  mfa_challenge
+  mfa_failed
+
+  @@schema("public")
+}
+
+enum role_scope {
+  PROPERTY
+  CORPORATE
+
+  @@schema("public")
+}
+
+enum user_status {
+  active
+  pending
+  disabled
+
+  @@schema("public")
+}
